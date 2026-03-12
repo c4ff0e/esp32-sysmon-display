@@ -5,36 +5,52 @@
     reason = "mem::forget is generally not safe to do with esp_hal types, especially those \
     holding buffers for the duration of a data transfer."
 )]
+
 #![deny(clippy::large_stack_frames)]
-
-use esp_backtrace as _;
-use esp_hal::clock::CpuClock;
-use esp_hal::main;
-use esp_hal::time::{Duration, Instant};
-use log::info;
-
-// This creates a default app-descriptor required by the esp-idf bootloader.
-// For more information see: <https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/app_image_format.html#application-description>
-esp_bootloader_esp_idf::esp_app_desc!();
-
 #[allow(
     clippy::large_stack_frames,
     reason = "it's not unusual to allocate larger buffers etc. in main"
 )]
+
+use core::ptr::addr_of_mut;
+
+use esp_backtrace as _;
+use esp_hal::clock::CpuClock;
+use esp_hal::time::{Duration, Instant};
+use esp_hal::{
+    main,
+    otg_fs::{Usb, UsbBus} };
+
+use log::info;
+
+use usbd_serial::{SerialPort, USB_CLASS_CDC};
+use usb_device::prelude::{UsbDeviceBuilder, UsbVidPid};
+
+static mut EP_MEMORY: [u32; 1024] = [0; 1024]; // 4KB of memory for USB endpoints
+
+esp_bootloader_esp_idf::esp_app_desc!();
+
 #[main]
 fn main() -> ! {
-    // generator version: 1.2.0
 
-    esp_println::logger::init_logger_from_env();
-
+    
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
-    let _peripherals = esp_hal::init(config);
+    let peripherals = esp_hal::init(config);
 
-    loop {
-        info!("Hello world!");
+    let usb = Usb::new(peripherals.USB0, peripherals.GPIO20, peripherals.GPIO19);
+    let usb_bus = UsbBus::new(usb, unsafe { &mut *addr_of_mut!(EP_MEMORY) }); // 4kb of memory for USB endpoints
+
+    let mut serial = SerialPort::new(&usb_bus); // usb serial port
+
+    let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x303A, 0x3001)) // VID and PID
+        .device_class(USB_CLASS_CDC)
+        .build();
+
+    loop { // main
+        if !usb_dev.poll(&mut [&mut serial]) {
+            continue;
+        }
         let delay_start = Instant::now();
         while delay_start.elapsed() < Duration::from_millis(500) {}
     }
-
-    // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.0.0/examples
 }
