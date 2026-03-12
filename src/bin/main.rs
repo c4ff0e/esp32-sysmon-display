@@ -21,7 +21,7 @@ use esp_hal::{
     main,
     otg_fs::{Usb, UsbBus} };
 
-use log::info;
+use log::{info, debug, error};
 
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 use usb_device::prelude::{UsbDeviceBuilder, UsbVidPid};
@@ -33,12 +33,13 @@ esp_bootloader_esp_idf::esp_app_desc!();
 #[main]
 fn main() -> ! {
 
-    
+    esp_println::logger::init_logger_from_env();
+
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
     let peripherals = esp_hal::init(config);
 
     let usb = Usb::new(peripherals.USB0, peripherals.GPIO20, peripherals.GPIO19);
-    let usb_bus = UsbBus::new(usb, unsafe { &mut *addr_of_mut!(EP_MEMORY) }); // 4kb of memory for USB endpoints
+    let usb_bus = UsbBus::new(usb, unsafe { &mut *addr_of_mut!(EP_MEMORY) });
 
     let mut serial = SerialPort::new(&usb_bus); // usb serial port
 
@@ -50,6 +51,7 @@ fn main() -> ! {
         if !usb_dev.poll(&mut [&mut serial]) {
             continue;
         }
+        info!("USB device polled successfully");
         let delay_start = Instant::now();
         while delay_start.elapsed() < Duration::from_millis(500) {}
     }
