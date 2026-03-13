@@ -16,7 +16,7 @@ use core::ptr::addr_of_mut;
 
 use esp_backtrace as _;
 use esp_hal::clock::CpuClock;
-use esp_hal::time::{Duration, Instant};
+use esp_hal::time::{Instant};
 use esp_hal::{
     main,
     otg_fs::{Usb, UsbBus} };
@@ -26,6 +26,10 @@ use log::{info};
 use usb_device::device::StringDescriptors;
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 use usb_device::prelude::{UsbDeviceBuilder, UsbVidPid};
+
+use postcard::accumulator::{CobsAccumulator, FeedResult};
+
+use display::data;
 
 static mut EP_MEMORY: [u32; 1024] = [0; 1024]; // 4KB of memory for USB endpoints
 
@@ -54,11 +58,16 @@ fn main() -> ! {
         .build();
 
     loop { // main
+        let pipeline_start = Instant::now();
+
         if !usb_dev.poll(&mut [&mut serial]) {
             continue;
         }
+        
         info!("USB device polled successfully");
-        let delay_start = Instant::now();
-        while delay_start.elapsed() < Duration::from_millis(500) {}
+
+        let pipeline_duration = pipeline_start.elapsed();
+        info!("Pipeline execution time: {:?}", pipeline_duration);
+        
     }
 }
