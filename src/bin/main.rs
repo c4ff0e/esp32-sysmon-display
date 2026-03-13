@@ -21,8 +21,9 @@ use esp_hal::{
     main,
     otg_fs::{Usb, UsbBus} };
 
-use log::{info, debug, error};
+use log::{info};
 
+use usb_device::device::StringDescriptors;
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 use usb_device::prelude::{UsbDeviceBuilder, UsbVidPid};
 
@@ -43,7 +44,12 @@ fn main() -> ! {
 
     let mut serial = SerialPort::new(&usb_bus); // usb serial port
 
-    let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x303A, 0x3001)) // VID and PID
+    let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x303A, 0x3001))
+    .strings(&[StringDescriptors::default()
+    .manufacturer("Gadza Techonologies")
+    .product("Zhmishenko Valeriy Albertovich")
+    .serial_number("Dve dvoechki odna vos'merochka")])
+    .expect("Failed to set USB device strings")
         .device_class(USB_CLASS_CDC)
         .build();
 
