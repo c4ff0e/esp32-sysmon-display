@@ -118,8 +118,8 @@ fn main() -> ! {
                 device_state.gpu_name, device_state.gpu_supported,
                 device_state.total_ram, device_state.gpu_memory_total);
             info!("Current Metrics: CPU Usage: {:.2}%, CPU Frequency: {} MHz, GPU Usage: {:.2}%, GPU Temp: {}°C, GPU Memory Used: {} GB",
-                current_metrics.cpu_usage * 100.0, current_metrics.cpu_frequency / 1_000_000,
-                current_metrics.gpu_usage * 100.0, current_metrics.gpu_temp,
+                current_metrics.cpu_usage, current_metrics.cpu_frequency,
+                current_metrics.gpu_usage, current_metrics.gpu_temp,
                 current_metrics.gpu_memory_used / (1024 * 1024 * 1024));
         }
 
