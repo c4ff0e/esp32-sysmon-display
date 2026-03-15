@@ -113,15 +113,39 @@ fn main() -> ! {
 
         // render starts here
         if let (Some(device_state), Some(current_metrics)) = (&device_state, &current_metrics) {
-            //NOTE: THIS EATS A LOT OF TIME (27ms to be orecise)
-            info!("Device State: CPU: {} (Supported: {}), GPU: {} (Supported: {}), Total RAM: {} GB, GPU Memory Total: {} GB",
-                device_state.cpu_name, device_state.cpu_supported,
-                device_state.gpu_name, device_state.gpu_supported,
-                device_state.total_ram, device_state.gpu_memory_total);
-            info!("Current Metrics: CPU Usage: {:.2}%, CPU Frequency: {} MHz, GPU Usage: {:.2}%, GPU Temp: {}°C, GPU Memory Used: {} GB",
-                current_metrics.cpu_usage, current_metrics.cpu_frequency,
-                current_metrics.gpu_usage, current_metrics.gpu_temp,
-                current_metrics.gpu_memory_used / (1024 * 1024 * 1024));
+            // this eats a lot of time
+
+            /* 
+            info!(
+                "Device State: CPU: {} (Supported: {}), GPU: {} (Supported: {}), Total RAM: {} GB, GPU Memory Total: {} GB",
+                device_state.cpu_name,
+                device_state.cpu_supported,
+                device_state.gpu_name,
+                device_state.gpu_supported,
+                device_state.total_ram,
+                device_state.gpu_memory_total
+            );
+            let ram_used_gb = current_metrics.used_ram / (1024 * 1024 * 1024);
+            let gpu_memory_used_gb = current_metrics.gpu_memory_used / (1024 * 1024 * 1024);
+
+            info!(
+                "CPU | load {:>5.2}% | freq {:>4} MHz | temp {:>4.1} C | RAM {:>2}/{} GB",
+                current_metrics.cpu_usage,
+                current_metrics.cpu_frequency,
+                current_metrics.cpu_temp,
+                ram_used_gb,
+                device_state.total_ram
+            );
+            info!(
+                "GPU | load {:>5.2}% | freq {:>4} MHz | temp {:>3} C | VRAM {:>2}/{} GB",
+                current_metrics.gpu_usage,
+                current_metrics.gpu_freq,
+                current_metrics.gpu_temp,
+                gpu_memory_used_gb,
+                device_state.gpu_memory_total
+            );
+            
+            */
         }
 
 

@@ -9,6 +9,7 @@ pub struct IncomingMetrics{
     pub cpu_name: String<128>, 
     pub cpu_frequency: u32,
     pub cpu_is_supported: bool,
+    pub cpu_temp: f32,
 
     pub total_ram: u64,
     pub used_ram: u64,
