@@ -113,6 +113,7 @@ fn main() -> ! {
 
         // render starts here
         if let (Some(device_state), Some(current_metrics)) = (&device_state, &current_metrics) {
+            //NOTE: THIS EATS A LOT OF TIME (27ms to be orecise)
             info!("Device State: CPU: {} (Supported: {}), GPU: {} (Supported: {}), Total RAM: {} GB, GPU Memory Total: {} GB",
                 device_state.cpu_name, device_state.cpu_supported,
                 device_state.gpu_name, device_state.gpu_supported,
@@ -125,7 +126,7 @@ fn main() -> ! {
 
 
         let pipeline_duration = pipeline_start.elapsed();
-        info!("Pipeline execution time: {:?}", pipeline_duration);
+        info!("Pipeline execution time: {:?} ms", pipeline_duration.as_millis());
         
     }
 }
