@@ -29,7 +29,8 @@ use usb_device::prelude::{UsbDeviceBuilder, UsbVidPid};
 
 use postcard::accumulator::{CobsAccumulator, FeedResult};
 
-use display::data;
+use display::data::{DeviceState, IncomingMetrics};
+use display::receive;
 
 static mut EP_MEMORY: [u32; 1024] = [0; 1024]; // 4KB of memory for USB endpoints
 
@@ -46,7 +47,7 @@ fn main() -> ! {
     let usb = Usb::new(peripherals.USB0, peripherals.GPIO20, peripherals.GPIO19);
     let usb_bus = UsbBus::new(usb, unsafe { &mut *addr_of_mut!(EP_MEMORY) });
 
-    let mut serial = SerialPort::new(&usb_bus); // usb serial port
+    let mut serial  = SerialPort::new(&usb_bus); // usb serial port
 
     let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x303A, 0x3001))
     .strings(&[StringDescriptors::default()
@@ -57,14 +58,71 @@ fn main() -> ! {
         .device_class(USB_CLASS_CDC)
         .build();
 
+    let mut accumulator = CobsAccumulator::<256>::new();
+    let mut rx_buf = [0u8; 64];
+
+    let mut device_state: Option<DeviceState> = None;
+    let mut current_metrics: Option<IncomingMetrics> = None;
+
     loop { // main
         let pipeline_start = Instant::now();
-
+        
         if !usb_dev.poll(&mut [&mut serial]) {
             continue;
         }
-        
-        info!("USB device polled successfully");
+
+        // reading serial input
+        let received_bytes = receive::receive_data(&mut serial, &mut rx_buf);
+        match received_bytes {
+            Ok(count) if count > 0 => {
+                let mut chunk = &rx_buf[..count];
+
+                //feed accumulor till its full
+                while !chunk.is_empty(){
+                    let accumulator_result =receive::accumulate(&mut accumulator, chunk);
+                    match accumulator_result {
+                        FeedResult::Consumed => { break }
+                        FeedResult::Success { data, remaining } => {
+                            chunk = remaining;
+                            if device_state.is_none(){
+                                device_state = Some(DeviceState::new(&data));
+                            }
+                            current_metrics = Some(data);
+                        }
+                        FeedResult::OverFull(remaining) => {
+                            chunk = remaining;
+                            info!("Accumulator overflow!");
+                        }
+                        FeedResult::DeserError(remaining) => {
+                            chunk = remaining;
+                            info!("Failed to deserialize data!");
+                        }
+                    }
+                }
+            }
+            Ok(_) => {
+                // no data
+            },
+            Err(usbd_serial::UsbError::WouldBlock) => {
+                // no data
+            },
+            Err(e) => {
+                info!("Error receiving data: {:?}", e);
+            }
+        }
+
+        // render starts here
+        if let (Some(device_state), Some(current_metrics)) = (&device_state, &current_metrics) {
+            info!("Device State: CPU: {} (Supported: {}), GPU: {} (Supported: {}), Total RAM: {} GB, GPU Memory Total: {} GB",
+                device_state.cpu_name, device_state.cpu_supported,
+                device_state.gpu_name, device_state.gpu_supported,
+                device_state.total_ram, device_state.gpu_memory_total);
+            info!("Current Metrics: CPU Usage: {:.2}%, CPU Frequency: {} MHz, GPU Usage: {:.2}%, GPU Temp: {}°C, GPU Memory Used: {} GB",
+                current_metrics.cpu_usage * 100.0, current_metrics.cpu_frequency / 1_000_000,
+                current_metrics.gpu_usage * 100.0, current_metrics.gpu_temp,
+                current_metrics.gpu_memory_used / (1024 * 1024 * 1024));
+        }
+
 
         let pipeline_duration = pipeline_start.elapsed();
         info!("Pipeline execution time: {:?}", pipeline_duration);

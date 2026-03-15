@@ -1,18 +1,19 @@
-use postcard::fixint::le;
 use serde::Deserialize;
 use log::info;
+use heapless::String;
 
 #[derive(Deserialize)]
-pub struct IncomingMetrics<'a>{
+// it is kinda wasteful to save strings value on every succesfull packet, but anyway...
+pub struct IncomingMetrics{
     pub cpu_usage: f32,
-    pub cpu_name: &'a str,
+    pub cpu_name: String<128>, 
     pub cpu_frequency: u32,
     pub cpu_is_supported: bool,
 
     pub total_ram: u64,
     pub used_ram: u64,
 
-    pub gpu_name: &'a str,
+    pub gpu_name: String<128>,
     pub gpu_usage: f32,
     pub gpu_temp: u32,
     pub gpu_memory_total: u64,
@@ -23,26 +24,26 @@ pub struct IncomingMetrics<'a>{
 }
 
 pub struct DeviceState{
-    cpu_name: heapless::String<128>,
-    cpu_supported: bool,
+    pub cpu_name: heapless::String<128>,
+    pub cpu_supported: bool,
 
-    gpu_name: heapless::String<128>,
-    gpu_supported:bool,
+    pub gpu_name: heapless::String<128>,
+    pub gpu_supported:bool,
 
-    total_ram: u64,
-    gpu_memory_total: u64,
+    pub total_ram: u64,
+    pub gpu_memory_total: u64,
 }
 
 impl DeviceState{
-    pub fn new(incoming: &IncomingMetrics<'_>)-> Self {
+    pub fn new(incoming: &IncomingMetrics)-> Self {
 
         let mut cpu_name = heapless::String::<128>::new();
-        cpu_name.push_str(incoming.cpu_name).unwrap_or_else(|_| {
+        cpu_name.push_str(&incoming.cpu_name).unwrap_or_else(|_| {
             info!("Failed to set CPU name: input string is too long");
         });
 
         let mut gpu_name = heapless::String::<128>::new();
-        gpu_name.push_str(incoming.gpu_name).unwrap_or_else(|_| {
+        gpu_name.push_str(&incoming.gpu_name).unwrap_or_else(|_| {
             info!("Failed to set GPU name: input string is too long");
         });
         Self{
