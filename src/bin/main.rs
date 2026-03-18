@@ -6,13 +6,13 @@
     holding buffers for the duration of a data transfer."
 )]
 #![deny(clippy::large_stack_frames)]
+use core::ptr::addr_of_mut;
 #[allow(
     clippy::large_stack_frames,
     reason = "it's not unusual to allocate larger buffers etc. in main"
 )]
 use display::render;
 use display::render::common::FrameKind;
-use core::ptr::addr_of_mut;
 
 use esp_backtrace as _;
 use esp_hal::clock::CpuClock;
@@ -112,12 +112,11 @@ fn main() -> ! {
                 info!("Error receiving data: {:?}", e);
             }
         }
-        
+
         // render starts here
         if let (Some(device_state), Some(current_metrics)) = (&device_state, &current_metrics) {
-
             // this eats a lot of time
-            /* 
+            /*
             info!(
                 "Device State: CPU: {} (Supported: {}), GPU: {} (Supported: {}), Total RAM: {} GB, GPU Memory Total: {} GB",
                 device_state.cpu_name,
@@ -149,20 +148,17 @@ fn main() -> ! {
             */
 
             // render unsupported continuosly
-            if !device_state.cpu_supported && !device_state.gpu_supported{
+            if !device_state.cpu_supported && !device_state.gpu_supported {
                 render::unsupported::render_unsupported(&mut None, FrameKind::GpuAndCpu)
             }
-
             // render cpu unsupported frames + cpu-only layout
-            else if !device_state.cpu_supported && device_state.gpu_supported{
-                render::unsupported::render_unsupported(&mut Some(unsupported_frames), FrameKind::Cpu)
+            else if !device_state.cpu_supported && device_state.gpu_supported {
+                render::unsupported::render_unsupported(&mut Some(unsupported_frames),FrameKind::Cpu,)
             }
-
             // render gpu unsupported frames + gpu-only layout
-            else if device_state.cpu_supported && !device_state.gpu_supported{
-                render::unsupported::render_unsupported(&mut Some(unsupported_frames), FrameKind::Gpu)
+            else if device_state.cpu_supported && !device_state.gpu_supported {
+                render::unsupported::render_unsupported(&mut Some(unsupported_frames),FrameKind::Gpu,)
             }
-
             // render everything (CPU TEMP IS RENDERED ALWAYS; IN CASE OF CPU TEMP == 0.0 RENDER X MARK)
             else {
                 //both renders
@@ -174,5 +170,5 @@ fn main() -> ! {
             "Pipeline execution time: {:?} ms",
             pipeline_duration.as_millis()
         );
-}
+    }
 }

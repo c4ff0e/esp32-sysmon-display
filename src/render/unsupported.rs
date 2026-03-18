@@ -3,8 +3,8 @@ use crate::render::common::FrameKind;
 //TODO:rendering code, return type
 
 //TODO: currently frame counting wouldnt work FIX THIS FIRST
-pub fn render_unsupported(frames: &mut Option<i32>, kind:FrameKind){
-    match frames{
+pub fn render_unsupported(frames: &mut Option<i32>, kind: FrameKind) {
+    match frames {
         Some(frames) => {
             //frames TODO:return type
         }
@@ -13,7 +13,7 @@ pub fn render_unsupported(frames: &mut Option<i32>, kind:FrameKind){
             //doesnt count up
         }
     }
-    match kind{
+    match kind {
         FrameKind::Cpu => {
             //rendering code
         }

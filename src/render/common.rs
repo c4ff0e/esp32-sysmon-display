@@ -1,5 +1,5 @@
-pub enum FrameKind{
+pub enum FrameKind {
     Cpu,
     Gpu,
-    GpuAndCpu
+    GpuAndCpu,
 }

@@ -26,7 +26,7 @@ pub struct IncomingMetrics {
 pub struct DeviceState {
     pub cpu_name: heapless::String<128>,
     pub cpu_supported: bool,
-    pub cpu_temp_supported:bool,
+    pub cpu_temp_supported: bool,
 
     pub gpu_name: heapless::String<128>,
     pub gpu_supported: bool,
