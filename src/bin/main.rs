@@ -10,6 +10,8 @@
     clippy::large_stack_frames,
     reason = "it's not unusual to allocate larger buffers etc. in main"
 )]
+use display::render;
+use display::render::common::FrameKind;
 use core::ptr::addr_of_mut;
 
 use esp_backtrace as _;
@@ -62,6 +64,7 @@ fn main() -> ! {
     let mut device_state: Option<DeviceState> = None;
     let mut current_metrics: Option<IncomingMetrics> = None;
 
+    let mut unsupported_frames = 0;
     loop {
         // main
         let pipeline_start = Instant::now();
@@ -109,12 +112,12 @@ fn main() -> ! {
                 info!("Error receiving data: {:?}", e);
             }
         }
-
+        
         // render starts here
         if let (Some(device_state), Some(current_metrics)) = (&device_state, &current_metrics) {
-            // this eats a lot of time
 
-            /*
+            // this eats a lot of time
+            /* 
             info!(
                 "Device State: CPU: {} (Supported: {}), GPU: {} (Supported: {}), Total RAM: {} GB, GPU Memory Total: {} GB",
                 device_state.cpu_name,
@@ -143,8 +146,27 @@ fn main() -> ! {
                 gpu_memory_used_gb,
                 device_state.gpu_memory_total
             );
-
             */
+
+            // render unsupported continuosly
+            if !device_state.cpu_supported && !device_state.gpu_supported{
+                render::unsupported::render_unsupported(&mut None, FrameKind::GpuAndCpu)
+            }
+
+            // render cpu unsupported frames + cpu-only layout
+            else if !device_state.cpu_supported && device_state.gpu_supported{
+                render::unsupported::render_unsupported(&mut Some(unsupported_frames), FrameKind::Cpu)
+            }
+
+            // render gpu unsupported frames + gpu-only layout
+            else if device_state.cpu_supported && !device_state.gpu_supported{
+                render::unsupported::render_unsupported(&mut Some(unsupported_frames), FrameKind::Gpu)
+            }
+
+            // render everything (CPU TEMP IS RENDERED ALWAYS; IN CASE OF CPU TEMP == 0.0 RENDER X MARK)
+            else {
+                //both renders
+            }
         }
 
         let pipeline_duration = pipeline_start.elapsed();
@@ -152,5 +174,5 @@ fn main() -> ! {
             "Pipeline execution time: {:?} ms",
             pipeline_duration.as_millis()
         );
-    }
+}
 }
