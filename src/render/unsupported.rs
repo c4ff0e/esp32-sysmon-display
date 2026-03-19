@@ -11,7 +11,6 @@ fn increment(frames: &mut Option<i32>){
 //TODO:rendering code, return type
 pub fn render_unsupported(frames: &mut Option<i32>, kind: FrameKind) {
     match kind {
-        
         FrameKind::Cpu => {
             //rendering code
             

@@ -64,7 +64,7 @@ fn main() -> ! {
     let mut device_state: Option<DeviceState> = None;
     let mut current_metrics: Option<IncomingMetrics> = None;
 
-    let mut unsupported_frames = 0;
+    let mut unsupported_frames = Some(0);
     loop {
         // main
         let pipeline_start = Instant::now();
@@ -153,11 +153,11 @@ fn main() -> ! {
             }
             // render cpu unsupported frames + cpu-only layout
             else if !device_state.cpu_supported && device_state.gpu_supported {
-                render::unsupported::render_unsupported(&mut Some(unsupported_frames),FrameKind::Cpu,)
+                render::unsupported::render_unsupported(&mut unsupported_frames,FrameKind::Cpu,)
             }
             // render gpu unsupported frames + gpu-only layout
             else if device_state.cpu_supported && !device_state.gpu_supported {
-                render::unsupported::render_unsupported(&mut Some(unsupported_frames),FrameKind::Gpu,)
+                render::unsupported::render_unsupported(&mut unsupported_frames,FrameKind::Gpu,)
             }
             // render everything (CPU TEMP IS RENDERED ALWAYS; IN CASE OF CPU TEMP == 0.0 RENDER X MARK)
             else {
