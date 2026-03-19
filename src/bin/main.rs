@@ -32,7 +32,7 @@ use display::usb::data::{DeviceState, IncomingMetrics};
 use display::usb::receive;
 
 use display::render;
-use display::render::common::RenderDecision;
+use display::render::common::{RenderDecision, FrameKind};
 
 use display::logging;
 // 4KB of memory for USB endpoints
@@ -96,6 +96,9 @@ fn main() -> ! {
                     // renders everything
                 }
             }
+        }
+        else {
+            render::unsupported::render_unsupported(&mut unsupported_frames_count, FrameKind::NoMetrics, MAX_UNSUPPORTED_FRAMES);
         }
 
         let pipeline_duration = pipeline_start.elapsed();

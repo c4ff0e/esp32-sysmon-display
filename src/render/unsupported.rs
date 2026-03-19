@@ -49,5 +49,12 @@ pub fn render_unsupported(frames: &mut Option<i32>, kind: FrameKind, max_unsuppo
 
             //
         }
+        
+        // frame count does not go up
+        FrameKind::NoMetrics =>{
+            //rendering code
+
+            //
+        }
     }
 }
