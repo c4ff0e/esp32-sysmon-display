@@ -11,8 +11,6 @@ use core::ptr::addr_of_mut;
     clippy::large_stack_frames,
     reason = "it's not unusual to allocate larger buffers etc. in main"
 )]
-use display::render;
-use display::render::common::{RenderDecision};
 
 use esp_backtrace as _;
 use esp_hal::clock::CpuClock;
@@ -30,10 +28,15 @@ use usbd_serial::{SerialPort, USB_CLASS_CDC};
 
 use postcard::accumulator::{CobsAccumulator, FeedResult};
 
-use display::data::{DeviceState, IncomingMetrics};
-use display::receive;
+use display::usb::data::{DeviceState, IncomingMetrics};
+use display::usb::receive;
 
-static mut EP_MEMORY: [u32; 1024] = [0; 1024]; // 4KB of memory for USB endpoints
+use display::render;
+use display::render::common::RenderDecision;
+
+use display::logging;
+// 4KB of memory for USB endpoints
+static mut EP_MEMORY: [u32; 1024] = [0; 1024];
 
 esp_bootloader_esp_idf::esp_app_desc!();
 
@@ -46,9 +49,7 @@ fn main() -> ! {
 
     let usb = Usb::new(peripherals.USB0, peripherals.GPIO20, peripherals.GPIO19);
     let usb_bus = UsbBus::new(usb, unsafe { &mut *addr_of_mut!(EP_MEMORY) });
-
     let mut serial = SerialPort::new(&usb_bus); // usb serial port
-
     let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x303A, 0x3001))
         .strings(&[StringDescriptors::default()
             .manufacturer("Gadza Techonologies")
@@ -61,11 +62,14 @@ fn main() -> ! {
     let mut accumulator = CobsAccumulator::<256>::new();
     let mut rx_buf = [0u8; 64];
 
+    //state
     let mut device_state: Option<DeviceState> = None;
     let mut incoming_metrics: Option<IncomingMetrics> = None;
 
+    //frames
     let mut unsupported_frames_count = Some(0);
-    const MAX_UNSUPPORTED_FRAMES: i32 = 10; //can be changed
+    const MAX_UNSUPPORTED_FRAMES: i32 = 10; //can be changed\
+
     loop {
         // main
         let pipeline_start = Instant::now();
@@ -117,37 +121,9 @@ fn main() -> ! {
         // render starts here
         if let (Some(device_state), Some(incoming_metrics)) = (&device_state, &incoming_metrics) {
             // this eats a lot of time
-            /*
-            info!(
-                "Device State: CPU: {} (Supported: {}), GPU: {} (Supported: {}), Total RAM: {} GB, GPU Memory Total: {} GB",
-                device_state.cpu_name,
-                device_state.cpu_supported,
-                device_state.gpu_name,
-                device_state.gpu_supported,
-                device_state.total_ram,
-                device_state.gpu_memory_total
-            );
-            let ram_used_gb = current_metrics.used_ram / (1024 * 1024 * 1024);
-            let gpu_memory_used_gb = current_metrics.gpu_memory_used / (1024 * 1024 * 1024);
+            //logging::device::metrics(&incoming_metrics, &device_state);
 
-            info!(
-                "CPU | load {:>5.2}% | freq {:>4} MHz | temp {:>4.1} C | RAM {:>2}/{} GB",
-                current_metrics.cpu_usage,
-                current_metrics.cpu_frequency,
-                current_metrics.cpu_temp,
-                ram_used_gb,
-                device_state.total_ram
-            );
-            info!(
-                "GPU | load {:>5.2}% | freq {:>4} MHz | temp {:>3} C | VRAM {:>2}/{} GB",
-                current_metrics.gpu_usage,
-                current_metrics.gpu_freq,
-                current_metrics.gpu_temp,
-                gpu_memory_used_gb,
-                device_state.gpu_memory_total
-            );
-            */
-            match render::decider::decider(&device_state){
+            match render::decider::decider(&device_state) {
                 RenderDecision::Unsupported(kind) => {
                     render::unsupported::render_unsupported(&mut unsupported_frames_count, kind, MAX_UNSUPPORTED_FRAMES);
                 }
@@ -156,7 +132,6 @@ fn main() -> ! {
                     // renders everything
                 }
             }
-
         }
 
         let pipeline_duration = pipeline_start.elapsed();

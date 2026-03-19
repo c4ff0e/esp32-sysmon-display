@@ -3,7 +3,7 @@ pub enum FrameKind {
     Gpu,
     GpuAndCpu,
 }
-pub enum RenderDecision{
+pub enum RenderDecision {
     Unsupported(FrameKind),
     Full,
 }

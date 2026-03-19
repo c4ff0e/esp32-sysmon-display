@@ -3,7 +3,7 @@ use log::info;
 use postcard::accumulator::{CobsAccumulator, FeedResult};
 use usbd_serial::SerialPort;
 
-use crate::data::IncomingMetrics;
+use crate::usb::data::IncomingMetrics;
 
 pub fn receive_data(
     serial: &mut SerialPort<'_, UsbBus<Usb<'_>>>,
