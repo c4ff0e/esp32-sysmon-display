@@ -26,7 +26,7 @@ use usb_device::device::StringDescriptors;
 use usb_device::prelude::{UsbDeviceBuilder, UsbVidPid};
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 
-use postcard::accumulator::{CobsAccumulator, FeedResult};
+use postcard::accumulator::{CobsAccumulator,};
 
 use display::usb::data::{DeviceState, IncomingMetrics};
 use display::usb::receive;
@@ -80,48 +80,12 @@ fn main() -> ! {
 
         // reading serial input
         let received_bytes = receive::receive_data(&mut serial, &mut rx_buf);
-        match received_bytes {
-            Ok(count) if count > 0 => {
-                let mut chunk = &rx_buf[..count];
-
-                //feed accumulor till its full
-                while !chunk.is_empty() {
-                    let accumulator_result = receive::accumulate(&mut accumulator, chunk);
-                    match accumulator_result {
-                        FeedResult::Consumed => break,
-                        FeedResult::Success { data, remaining } => {
-                            chunk = remaining;
-                            if device_state.is_none() {
-                                device_state = Some(DeviceState::new(&data));
-                            }
-                            incoming_metrics = Some(data);
-                        }
-                        FeedResult::OverFull(remaining) => {
-                            chunk = remaining;
-                            info!("Accumulator overflow!");
-                        }
-                        FeedResult::DeserError(remaining) => {
-                            chunk = remaining;
-                            info!("Failed to deserialize data!");
-                        }
-                    }
-                }
-            }
-            Ok(_) => {
-                // no data
-            }
-            Err(usbd_serial::UsbError::WouldBlock) => {
-                // no data
-            }
-            Err(e) => {
-                info!("Error receiving data: {:?}", e);
-            }
-        }
+        receive::process_received(received_bytes, &rx_buf, &mut accumulator, &mut device_state, &mut incoming_metrics);
 
         // render starts here
         if let (Some(device_state), Some(incoming_metrics)) = (&device_state, &incoming_metrics) {
             // this eats a lot of time
-            //logging::device::metrics(&incoming_metrics, &device_state);
+            logging::device::metrics(&incoming_metrics, &device_state);
 
             match render::decider::decider(&device_state) {
                 RenderDecision::Unsupported(kind) => {
