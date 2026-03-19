@@ -12,7 +12,7 @@ use core::ptr::addr_of_mut;
     reason = "it's not unusual to allocate larger buffers etc. in main"
 )]
 use display::render;
-use display::render::common::FrameKind;
+use display::render::common::{RenderDecision};
 
 use esp_backtrace as _;
 use esp_hal::clock::CpuClock;
@@ -62,9 +62,10 @@ fn main() -> ! {
     let mut rx_buf = [0u8; 64];
 
     let mut device_state: Option<DeviceState> = None;
-    let mut current_metrics: Option<IncomingMetrics> = None;
+    let mut incoming_metrics: Option<IncomingMetrics> = None;
 
-    let mut unsupported_frames = Some(0);
+    let mut unsupported_frames_count = Some(0);
+    const MAX_UNSUPPORTED_FRAMES: i32 = 10; //can be changed
     loop {
         // main
         let pipeline_start = Instant::now();
@@ -89,7 +90,7 @@ fn main() -> ! {
                             if device_state.is_none() {
                                 device_state = Some(DeviceState::new(&data));
                             }
-                            current_metrics = Some(data);
+                            incoming_metrics = Some(data);
                         }
                         FeedResult::OverFull(remaining) => {
                             chunk = remaining;
@@ -114,7 +115,7 @@ fn main() -> ! {
         }
 
         // render starts here
-        if let (Some(device_state), Some(current_metrics)) = (&device_state, &current_metrics) {
+        if let (Some(device_state), Some(incoming_metrics)) = (&device_state, &incoming_metrics) {
             // this eats a lot of time
             /*
             info!(
@@ -146,23 +147,16 @@ fn main() -> ! {
                 device_state.gpu_memory_total
             );
             */
+            match render::decider::decider(&device_state){
+                RenderDecision::Unsupported(kind) => {
+                    render::unsupported::render_unsupported(&mut unsupported_frames_count, kind, MAX_UNSUPPORTED_FRAMES);
+                }
 
-            // render unsupported continuosly
-            if !device_state.cpu_supported && !device_state.gpu_supported {
-                render::unsupported::render_unsupported(&mut None, FrameKind::GpuAndCpu)
+                RenderDecision::Full => {
+                    // renders everything
+                }
             }
-            // render cpu unsupported frames + cpu-only layout
-            else if !device_state.cpu_supported && device_state.gpu_supported {
-                render::unsupported::render_unsupported(&mut unsupported_frames,FrameKind::Cpu,)
-            }
-            // render gpu unsupported frames + gpu-only layout
-            else if device_state.cpu_supported && !device_state.gpu_supported {
-                render::unsupported::render_unsupported(&mut unsupported_frames,FrameKind::Gpu,)
-            }
-            // render everything (CPU TEMP IS RENDERED ALWAYS; IN CASE OF CPU TEMP == 0.0 RENDER X MARK)
-            else {
-                //both renders
-            }
+
         }
 
         let pipeline_duration = pipeline_start.elapsed();
