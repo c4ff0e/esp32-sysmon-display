@@ -12,28 +12,46 @@ fn increment(frames: &mut Option<i32>){
 pub fn render_unsupported(frames: &mut Option<i32>, kind: FrameKind) {
     match kind {
         FrameKind::Cpu => {
-            //rendering code
+            if frames.is_some_and(|n| n < 10){
+                //rendering code
             
-            //
+                //
 
-            //count up frame
-            increment(frames);
+                //count up frame
+                increment(frames);
+            }
+            //stop rendering frames
+            else {
+                return
+            }
         }
         FrameKind::Gpu => {
-            //rendering code
+            if frames.is_some_and(|n| n < 10){
+                //rendering code
+            
+                //
 
-            //
-
-            //count up frame
-            increment(frames);
+                //count up frame
+                increment(frames);
+            }
+            //stop rendering frames
+            else {
+                return
+            }
         }
         FrameKind::GpuAndCpu => {
-            //rendering code
+            if frames.is_some_and(|n| n < 10){
+                //rendering code
+            
+                //
 
-            //
-
-            //count up frame
-            increment(frames);
+                //count up frame
+                increment(frames);
+            }
+            //stop rendering frames
+            else {
+                return
+            }
         }
     };
 }
