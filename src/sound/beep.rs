@@ -1,23 +1,67 @@
 use esp_hal::{delay::{Delay}, gpio::Output};
-use log::info;
 
-pub fn single_beep(beeper:&mut Output<'_>, init_beep: &mut bool){
-match init_beep{
-    true => return,
-    false => {
-        // dual beep
-        let delay = Delay::new();
-        info!("beeped");
-        beeper.set_high();
-        delay.delay_millis(100);
-        beeper.set_low();
+pub fn cpu_unsupported_beep(beeper:&mut Output<'_>, delay: &Delay ){
+    // 1 short
+    beeper.set_high();
+    delay.delay_millis(50);
+    beeper.set_low();
 
-        delay.delay_millis(50);
-        
-        beeper.set_high();
-        delay.delay_millis(100);
-        beeper.set_low();
-        *init_beep = true
-    }
 }
+
+pub fn gpu_unsupported_beep(beeper:&mut Output<'_>, delay: &Delay){
+    // 2 short
+    beeper.set_high();
+    delay.delay_millis(50);
+    beeper.set_low();
+
+    delay.delay_millis(50);
+
+    beeper.set_high();
+    delay.delay_millis(50);
+    beeper.set_low();
+
+}
+
+pub fn all_unsupported_beep(beeper:&mut Output<'_>, delay: &Delay){
+    // 3 short
+    beeper.set_high();
+    delay.delay_millis(50);
+    beeper.set_low();
+
+    delay.delay_millis(50);
+
+    beeper.set_high();
+    delay.delay_millis(50);
+    beeper.set_low();
+
+    delay.delay_millis(50);
+
+    beeper.set_high();
+    delay.delay_millis(50);
+    beeper.set_low();
+}
+
+pub fn no_metrics_beep(beeper:&mut Output<'_>, delay: &Delay){
+    // 4 short
+    beeper.set_high();
+    delay.delay_millis(50);
+    beeper.set_low();
+
+    delay.delay_millis(50);
+
+    beeper.set_high();
+    delay.delay_millis(50);
+    beeper.set_low();
+
+    delay.delay_millis(50);
+
+    beeper.set_high();
+    delay.delay_millis(50);
+    beeper.set_low();
+
+    delay.delay_millis(50);
+
+    beeper.set_high();
+    delay.delay_millis(50);
+    beeper.set_low();
 }

@@ -13,12 +13,13 @@ use core::ptr::addr_of_mut;
 )]
 
 use esp_backtrace as _;
-use esp_hal::clock::CpuClock;
-use esp_hal::time::Instant;
 use esp_hal::{
     main,
     otg_fs::{Usb, UsbBus},
-    gpio::{Output, OutputConfig, Level}
+    gpio::{Output, OutputConfig, Level},
+    time::Instant,
+    clock::CpuClock,
+    delay::Delay
 };
 
 use log::info;
@@ -37,7 +38,6 @@ use display::render::common::{RenderDecision, FrameKind};
 
 use display::logging;
 
-use display::sound;
 // 4KB of memory for USB endpoints
 static mut EP_MEMORY: [u32; 1024] = [0; 1024];
 
@@ -68,10 +68,12 @@ fn main() -> ! {
     //state
     let mut device_state: Option<DeviceState> = None;
     let mut incoming_metrics: Option<IncomingMetrics> = None;
-    let mut init_beep = false;
+
+    let mut unsupported_beep = false;
+    let mut no_metrics_beep = false;
     //frames
     let mut unsupported_frames_count = Some(0);
-    const MAX_UNSUPPORTED_FRAMES: i32 = 10; //can be changed\
+    const MAX_UNSUPPORTED_FRAMES: i32 = 10; //can be changed
 
     //beeper
     let mut beeper = Output::new(
@@ -79,11 +81,13 @@ fn main() -> ! {
         Level::Low,
         OutputConfig::default(),
     );
+
+    //blocking delay for beeps
+    let delay = Delay::new();
+
     loop {
         // main
         let pipeline_start = Instant::now();
-
-        sound::beep::single_beep(&mut beeper, &mut init_beep);
 
         if !usb_dev.poll(&mut [&mut serial]) {
             continue;
@@ -96,11 +100,19 @@ fn main() -> ! {
         // render starts here
         if let (Some(device_state), Some(incoming_metrics)) = (&device_state, &incoming_metrics) {
             // this eats a lot of time
-            logging::device::metrics(&incoming_metrics, &device_state);
+            //logging::device::metrics(&incoming_metrics, &device_state);
 
             match render::decider::decider(&device_state) {
                 RenderDecision::Unsupported(kind) => {
-                    render::unsupported::render_unsupported(&mut unsupported_frames_count, kind, MAX_UNSUPPORTED_FRAMES);
+                    render::unsupported::render_unsupported(
+                        &mut unsupported_frames_count,
+                        kind,
+                        MAX_UNSUPPORTED_FRAMES,
+                        &mut beeper,
+                        &delay,
+                        &mut unsupported_beep,
+                        &mut no_metrics_beep
+                    );
                 }
 
                 RenderDecision::Full => {
@@ -109,7 +121,15 @@ fn main() -> ! {
             }
         }
         else {
-            render::unsupported::render_unsupported(&mut unsupported_frames_count, FrameKind::NoMetrics, MAX_UNSUPPORTED_FRAMES);
+            render::unsupported::render_unsupported(
+                &mut unsupported_frames_count,
+                FrameKind::NoMetrics,
+                MAX_UNSUPPORTED_FRAMES,
+                &mut beeper, 
+                &delay,
+                &mut unsupported_beep,
+                &mut no_metrics_beep
+            );
         }
 
         let pipeline_duration = pipeline_start.elapsed();
