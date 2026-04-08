@@ -18,6 +18,7 @@ use esp_hal::time::Instant;
 use esp_hal::{
     main,
     otg_fs::{Usb, UsbBus},
+    gpio::{Output, OutputConfig, Level}
 };
 
 use log::info;
@@ -35,6 +36,8 @@ use display::render;
 use display::render::common::{RenderDecision, FrameKind};
 
 use display::logging;
+
+use display::sound;
 // 4KB of memory for USB endpoints
 static mut EP_MEMORY: [u32; 1024] = [0; 1024];
 
@@ -65,14 +68,22 @@ fn main() -> ! {
     //state
     let mut device_state: Option<DeviceState> = None;
     let mut incoming_metrics: Option<IncomingMetrics> = None;
-
+    let mut init_beep = false;
     //frames
     let mut unsupported_frames_count = Some(0);
     const MAX_UNSUPPORTED_FRAMES: i32 = 10; //can be changed\
 
+    //beeper
+    let mut beeper = Output::new(
+        peripherals.GPIO4,
+        Level::Low,
+        OutputConfig::default(),
+    );
     loop {
         // main
         let pipeline_start = Instant::now();
+
+        sound::beep::single_beep(&mut beeper, &mut init_beep);
 
         if !usb_dev.poll(&mut [&mut serial]) {
             continue;
