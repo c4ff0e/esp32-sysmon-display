@@ -77,7 +77,7 @@ fn main() -> ! {
     // while it is active beeps are not played
     let mut grace = true;
     let grace_start = Instant::now();
-    let grace_period= Duration::from_millis(1500);
+    let grace_period= Duration::from_millis(5000); //it is very high to aviod excessive beeps on first start
 
     //frames
     let mut unsupported_frames_count = 0;
@@ -141,7 +141,6 @@ fn main() -> ! {
             // reading serial input
             let received_bytes = receive::receive_data(&mut serial, &mut rx_buf);
             receive::process_received(received_bytes, &rx_buf, &mut accumulator, &mut device_state, &mut incoming_metrics);
-
 
         }
         else {
