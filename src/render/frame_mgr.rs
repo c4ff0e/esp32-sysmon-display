@@ -11,7 +11,7 @@ pub fn all_unsupported(
     delay: &Delay,
     beeper: &mut Output<'_>,
     ){
-        message::draw(display, "Your device is unsupported", Point::new(80, 64));
+        message::draw(display, "Your device\nis unsupported", Point::new(80, 54));
         beep::all_unsupported_beep(beeper, delay);
 }
 
@@ -30,6 +30,24 @@ pub fn connect_usb(
     beeper: &mut Output<'_>,
     ){
         message::draw(display, "You are\nconnected to\nCOM port\nSwitch port",Point::new(80, 34));
+        beep::connect_usb_beep(beeper, delay);
+    }
+
+pub fn message_cpu(
+    display: &mut st7735_lcd::ST7735<ExclusiveDevice<Spi<'_, esp_hal::Blocking>, Output<'_>, embedded_hal_bus::spi::NoDelay>, Output<'_>, Output<'_>>,
+    delay: &Delay,
+    beeper: &mut Output<'_>,
+    ){
+        message::draw(display, "Your CPU\nis not\nsupported",Point::new(80, 44));
+        beep::connect_usb_beep(beeper, delay);
+    }
+
+pub fn message_gpu(
+    display: &mut st7735_lcd::ST7735<ExclusiveDevice<Spi<'_, esp_hal::Blocking>, Output<'_>, embedded_hal_bus::spi::NoDelay>, Output<'_>, Output<'_>>,
+    delay: &Delay,
+    beeper: &mut Output<'_>,
+    ){
+        message::draw(display, "Your GPU\nis not\nsupported",Point::new(80, 44));
         beep::connect_usb_beep(beeper, delay);
     }
 /* 

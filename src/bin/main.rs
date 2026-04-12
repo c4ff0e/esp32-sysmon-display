@@ -185,8 +185,12 @@ fn main() -> ! {
                 Some(ScreenState::NoMetrics) => {
                     frame_mgr::no_metrics(&mut display, &delay, &mut beeper);
                 }
-                Some(ScreenState::MessageCpu) => {}
-                Some(ScreenState::MessageGpu) => {}
+                Some(ScreenState::MessageCpu) => {
+                    frame_mgr::message_cpu(&mut display, &delay, &mut beeper);
+                }
+                Some(ScreenState::MessageGpu) => {
+                    frame_mgr::message_gpu(&mut display, &delay, &mut beeper);
+                }
                 Some(ScreenState::UnsupportedCpu) => {}
                 Some(ScreenState::UnsupportedGpu) => {}
                 Some(ScreenState::UnsupportedCpuAndGpu) => {
