@@ -34,7 +34,7 @@ use embedded_graphics::{
 
 use log::info;
 
-use usb_device::device::{StringDescriptors};
+use usb_device::device::{StringDescriptors, UsbDeviceState};
 use usb_device::prelude::{UsbDeviceBuilder, UsbVidPid};
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 
@@ -131,25 +131,31 @@ fn main() -> ! {
         Level::Low,
         OutputConfig::default(),
     );
-    render::messages::connect::connect_usb(&mut display); //will be moved
+
+    // main
     loop {
-        // main
         let pipeline_start = Instant::now();
 
-        if !usb_dev.poll(&mut [&mut serial]) {
-            continue;
+        usb_dev.poll(&mut [&mut serial]);
+        let usb_state = usb_dev.state();
+
+        if usb_state == UsbDeviceState::Configured{
+            // reading serial input
+            let received_bytes = receive::receive_data(&mut serial, &mut rx_buf);
+            receive::process_received(received_bytes, &rx_buf, &mut accumulator, &mut device_state, &mut incoming_metrics);
         }
-
-        // reading serial input
-        let received_bytes = receive::receive_data(&mut serial, &mut rx_buf);
-        receive::process_received(received_bytes, &rx_buf, &mut accumulator, &mut device_state, &mut incoming_metrics);
-
+        else { // reset states so decider works properly
+            device_state = None;
+            incoming_metrics = None;
+        }
+        info!("{:?}",usb_state);
         // render starts here
         if let (Some(device_state), Some(incoming_metrics)) = (&device_state, &incoming_metrics) {
+            
             // this eats a lot of time
             //logging::device::metrics(&incoming_metrics, &device_state);
 
-            match render::decider::decider(&device_state) {
+            match render::decider::decider(&device_state,usb_state) {
                 RenderDecision::Unsupported(kind) => {
                     render::unsupported::render_unsupported(
                         &mut unsupported_frames_count,
@@ -165,18 +171,29 @@ fn main() -> ! {
                 RenderDecision::Full => {
                     // renders everything
                 }
+                RenderDecision::ConnectUsb => {
+                    render::messages::connect::connect_usb(&mut display);
+                }
             }
         }
         else {
-            render::unsupported::render_unsupported(
-                &mut unsupported_frames_count,
-                FrameKind::NoMetrics,
-                MAX_UNSUPPORTED_FRAMES,
-                &mut beeper, 
-                &delay,
-                &mut unsupported_beep,
-                &mut no_metrics_beep
-            );
+            match usb_state == UsbDeviceState::Configured{
+                false => {
+                    render::messages::connect::connect_usb(&mut display);
+                }
+                true => {
+                    render::unsupported::render_unsupported(
+                    &mut unsupported_frames_count,
+                    FrameKind::NoMetrics,
+                    MAX_UNSUPPORTED_FRAMES,
+                    &mut beeper, 
+                    &delay,
+                    &mut unsupported_beep,
+                    &mut no_metrics_beep
+                    );
+                }
+            }
+
         }
 
         let pipeline_duration = pipeline_start.elapsed();

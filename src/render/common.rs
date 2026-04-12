@@ -7,4 +7,5 @@ pub enum FrameKind {
 pub enum RenderDecision {
     Unsupported(FrameKind),
     Full,
+    ConnectUsb
 }
