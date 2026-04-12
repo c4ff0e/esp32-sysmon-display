@@ -1,20 +1,45 @@
-use crate::render::common::FrameKind;
 use crate::sound::beep;
+use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::gpio::Output;
 use esp_hal::delay::Delay;
-use log::info;
+use esp_hal::spi::master::Spi;
+use crate::render::messages;
+
 fn increment(frames: &mut Option<i32>) {
     match frames {
         Some(frames) => *frames += 1,
         None => return,
     }
 }
+// does not count frames
+pub fn all_unsupported(
+    display: &mut st7735_lcd::ST7735<ExclusiveDevice<Spi<'_, esp_hal::Blocking>, Output<'_>, embedded_hal_bus::spi::NoDelay>, Output<'_>, Output<'_>>,
+    delay: &Delay,
+    beeper: &mut Output<'_>,
+    ){
+        messages::unsupported_all::draw(display);
+        beep::all_unsupported_beep(beeper, delay);
+}
 
-//TODO:rendering code, return type
+// does not count frames
+pub fn no_metrics(
+    display: &mut st7735_lcd::ST7735<ExclusiveDevice<Spi<'_, esp_hal::Blocking>, Output<'_>, embedded_hal_bus::spi::NoDelay>, Output<'_>, Output<'_>>,
+    delay: &Delay,
+    beeper: &mut Output<'_>,
+    ){
+        messages::no_metrics::no_metrics(display);
+        beep::no_metrics_beep(beeper, delay);
+}
 
-//if this function gets kind:GpuAndCpu, frame count does not go up => renders on every pass
-//if frames >10: unsupported frames will not render
-
+pub fn connect_usb(
+    display: &mut st7735_lcd::ST7735<ExclusiveDevice<Spi<'_, esp_hal::Blocking>, Output<'_>, embedded_hal_bus::spi::NoDelay>, Output<'_>, Output<'_>>,
+    delay: &Delay,
+    beeper: &mut Output<'_>,
+    ){
+        messages::connect::connect_usb(display);
+        beep::connect_usb_beep(beeper, delay);
+    }
+/* 
 pub fn render_unsupported
     (
     frames: &mut Option<i32>, 
@@ -74,21 +99,6 @@ pub fn render_unsupported
             }
         }
 
-        // frame count does not go up
-        FrameKind::GpuAndCpu => {
-            //rendering code
-
-            //
-            // beep one time
-            match unsupported_beep{
-                true => {}
-                false => {
-                    beep::all_unsupported_beep(beeper, delay);
-                    *unsupported_beep = true;
-                    info!("gpu+cpu unsupported beep");
-                }
-            }
-        }
         
         // frame count does not go up
         FrameKind::NoMetrics =>{
@@ -106,3 +116,4 @@ pub fn render_unsupported
         }
     }
 }
+*/

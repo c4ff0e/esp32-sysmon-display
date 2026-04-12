@@ -5,15 +5,16 @@ use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::{gpio::Output, spi::master::Spi};
 use profont::PROFONT_14_POINT;
 
-pub fn connect_usb(display: &mut st7735_lcd::ST7735<ExclusiveDevice<Spi<'_, esp_hal::Blocking>, Output<'_>, embedded_hal_bus::spi::NoDelay>, Output<'_>, Output<'_>>){
+pub fn draw(display: &mut st7735_lcd::ST7735<ExclusiveDevice<Spi<'_, esp_hal::Blocking>, Output<'_>, embedded_hal_bus::spi::NoDelay>, Output<'_>, Output<'_>>){
     let label_style = TextStyleBuilder::new().alignment(Alignment::Center).baseline(Baseline::Middle).build();
     let text_style = MonoTextStyle::new(&PROFONT_14_POINT, Rgb565::WHITE);
     display.clear(Rgb565::BLACK).unwrap();
     Text::with_text_style(
-        "You are\nconnected to\nCOM port\nSwitch port",
-        Point::new(80, 34),
+        "Your device is unsupported",
+        Point::new(80, 64),
         text_style, 
-        label_style)
+        label_style
+        )
         .draw(display)
         .unwrap();
 }

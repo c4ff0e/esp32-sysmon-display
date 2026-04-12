@@ -40,11 +40,11 @@ use usbd_serial::{SerialPort, USB_CLASS_CDC};
 
 use postcard::accumulator::{CobsAccumulator,};
 
-use display::usb::data::{DeviceState, IncomingMetrics};
+use display::{render::frame_mgr, usb::data::{DeviceState, IncomingMetrics}};
 use display::usb::receive;
 
 use display::render;
-use display::render::common::{RenderDecision, FrameKind};
+use display::render::common::{RenderDecision, FrameKind, ScreenState,};
 
 use display::logging;
 
@@ -75,12 +75,11 @@ fn main() -> ! {
     let mut accumulator = CobsAccumulator::<256>::new();
     let mut rx_buf = [0u8; 64];
 
-    //state
+    //data state
     let mut device_state: Option<DeviceState> = None;
     let mut incoming_metrics: Option<IncomingMetrics> = None;
+    let mut current_screen: Option<ScreenState> = None;
 
-    let mut unsupported_beep = false;
-    let mut no_metrics_beep = false;
     //frames
     let mut unsupported_frames_count = Some(0);
     const MAX_UNSUPPORTED_FRAMES: i32 = 10; //can be changed
@@ -144,56 +143,46 @@ fn main() -> ! {
             let received_bytes = receive::receive_data(&mut serial, &mut rx_buf);
             receive::process_received(received_bytes, &rx_buf, &mut accumulator, &mut device_state, &mut incoming_metrics);
         }
-        else { // reset states so decider works properly
+        else {
+            // reset states so decider works properly
             device_state = None;
             incoming_metrics = None;
+
         }
-        info!("{:?}",usb_state);
-        // render starts here
-        if let (Some(device_state), Some(incoming_metrics)) = (&device_state, &incoming_metrics) {
-            
-            // this eats a lot of time
-            //logging::device::metrics(&incoming_metrics, &device_state);
 
-            match render::decider::decider(&device_state,usb_state) {
-                RenderDecision::Unsupported(kind) => {
-                    render::unsupported::render_unsupported(
-                        &mut unsupported_frames_count,
-                        kind,
-                        MAX_UNSUPPORTED_FRAMES,
-                        &mut beeper,
-                        &delay,
-                        &mut unsupported_beep,
-                        &mut no_metrics_beep
-                    );
-                }
+        //info!("{:?}",usb_state);
 
-                RenderDecision::Full => {
-                    // renders everything
+        // this eats a lot of time
+        //logging::device::metrics(&incoming_metrics, &device_state);
+
+        // decide next frame
+        let next_screen = match render::decider::decider(&device_state, usb_state) {
+            RenderDecision::ConnectUsb => Some(ScreenState::ConnectUsb),
+            RenderDecision::NoMetrics => Some(ScreenState::NoMetrics),
+            RenderDecision::Unsupported(FrameKind::Cpu) => Some(ScreenState::UnsupportedCpu),
+            RenderDecision::Unsupported(FrameKind::Gpu) => Some(ScreenState::UnsupportedGpu),
+            RenderDecision::Unsupported(FrameKind::GpuAndCpu) => Some(ScreenState::UnsupportedCpuAndGpu),
+            RenderDecision::Full => Some(ScreenState::Full)
+        };
+
+        // check if frame is already present and draw if not
+        if current_screen != next_screen {
+            match next_screen{
+                Some(ScreenState::ConnectUsb) => {
+                    frame_mgr::connect_usb(&mut display, &delay, &mut beeper);
                 }
-                RenderDecision::ConnectUsb => {
-                    render::messages::connect::connect_usb(&mut display);
+                Some(ScreenState::NoMetrics) => {
+                    frame_mgr::no_metrics(&mut display, &delay, &mut beeper);
                 }
+                Some(ScreenState::UnsupportedCpu) => {}
+                Some(ScreenState::UnsupportedGpu) => {}
+                Some(ScreenState::UnsupportedCpuAndGpu) => {
+                    frame_mgr::all_unsupported(&mut display, &delay, &mut beeper);
+                }
+                Some(ScreenState::Full) => {}
+                None => {}
             }
-        }
-        else {
-            match usb_state == UsbDeviceState::Configured{
-                false => {
-                    render::messages::connect::connect_usb(&mut display);
-                }
-                true => {
-                    render::unsupported::render_unsupported(
-                    &mut unsupported_frames_count,
-                    FrameKind::NoMetrics,
-                    MAX_UNSUPPORTED_FRAMES,
-                    &mut beeper, 
-                    &delay,
-                    &mut unsupported_beep,
-                    &mut no_metrics_beep
-                    );
-                }
-            }
-
+            current_screen = next_screen;
         }
 
         let pipeline_duration = pipeline_start.elapsed();

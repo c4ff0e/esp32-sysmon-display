@@ -2,10 +2,20 @@ pub enum FrameKind {
     Cpu,
     Gpu,
     GpuAndCpu,
-    NoMetrics
 }
 pub enum RenderDecision {
     Unsupported(FrameKind),
     Full,
-    ConnectUsb
+    ConnectUsb,
+    NoMetrics
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum ScreenState{
+    ConnectUsb,
+    NoMetrics,
+    UnsupportedCpu,
+    UnsupportedGpu,
+    UnsupportedCpuAndGpu,
+    Full
 }
