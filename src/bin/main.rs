@@ -7,6 +7,7 @@
 )]
 #![deny(clippy::large_stack_frames)]
 use core::ptr::addr_of_mut;
+use embedded_hal_bus::spi::ExclusiveDevice;
 #[allow(
     clippy::large_stack_frames,
     reason = "it's not unusual to allocate larger buffers etc. in main"
@@ -14,13 +15,21 @@ use core::ptr::addr_of_mut;
 
 use esp_backtrace as _;
 use esp_hal::{
-    main,
-    otg_fs::{Usb, UsbBus},
-    gpio::{Output, OutputConfig, Level},
-    time::Instant,
     clock::CpuClock,
-    delay::Delay
+    delay::Delay, 
+    gpio::{Level, Output, OutputConfig}, 
+    main, 
+    otg_fs::{Usb, UsbBus},
+    time::Instant,
+    spi::{Mode, master::{Spi, Config}},
+    time::Rate
 };
+
+use st7735_lcd;
+use st7735_lcd::Orientation;
+
+use embedded_graphics::prelude::*;
+use embedded_graphics::pixelcolor::Rgb565;
 
 use log::info;
 
@@ -75,6 +84,45 @@ fn main() -> ! {
     let mut unsupported_frames_count = Some(0);
     const MAX_UNSUPPORTED_FRAMES: i32 = 10; //can be changed
 
+    let mut delay = Delay::new();
+
+    //display
+    let display_config = Config::default()
+    .with_frequency(Rate::from_mhz(20))
+    .with_mode(Mode::_0);
+
+    let cs = Output::new(
+        peripherals.GPIO1,
+        Level::High,
+        OutputConfig::default()
+    );
+
+    let reset = Output::new(
+        peripherals.GPIO2,
+        Level::High,
+        OutputConfig::default()
+    );
+
+    let dc = Output::new(
+        peripherals.GPIO7,
+        Level::Low,
+        OutputConfig::default()
+    );
+    let spi_bus = Spi::new(peripherals.SPI2, display_config).unwrap()
+    .with_sck(peripherals.GPIO12)
+    .with_mosi(peripherals.GPIO11);
+    
+    let spi_dev = ExclusiveDevice::new_no_delay(spi_bus, cs).unwrap();
+
+    let width = 128;
+    let height = 160;
+    let rgb = true;
+    let inverted = false;
+
+    let mut display = st7735_lcd::ST7735::new(spi_dev, dc, reset, rgb, inverted, width, height);
+    display.init(&mut delay).unwrap();
+    display.clear(Rgb565::BLACK).unwrap();
+
     //beeper
     let mut beeper = Output::new(
         peripherals.GPIO4,
@@ -82,8 +130,7 @@ fn main() -> ! {
         OutputConfig::default(),
     );
 
-    //blocking delay for beeps
-    let delay = Delay::new();
+    
 
     loop {
         // main
