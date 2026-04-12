@@ -15,14 +15,7 @@ use embedded_hal_bus::spi::ExclusiveDevice;
 
 use esp_backtrace as _;
 use esp_hal::{
-    clock::CpuClock,
-    delay::Delay, 
-    gpio::{Level, Output, OutputConfig}, 
-    main, 
-    otg_fs::{Usb, UsbBus},
-    time::Instant,
-    spi::{Mode, master::{Spi, Config}},
-    time::Rate
+    clock::CpuClock, delay::Delay, gpio::{Level, Output, OutputConfig}, main, otg_fs::{Usb, UsbBus}, spi::{Mode, master::{Config, Spi}}, time::{Duration, Instant, Rate}
 };
 
 use st7735_lcd;
@@ -75,10 +68,16 @@ fn main() -> ! {
     let mut accumulator = CobsAccumulator::<256>::new();
     let mut rx_buf = [0u8; 64];
 
-    //data state
+    //state
     let mut device_state: Option<DeviceState> = None;
     let mut incoming_metrics: Option<IncomingMetrics> = None;
     let mut current_screen: Option<ScreenState> = None;
+
+    // grace period for letting the pc to enumarate device
+    // while it is active beeps are not played
+    let mut grace = true;
+    let grace_start = Instant::now();
+    let grace_period= Duration::from_millis(1500);
 
     //frames
     let mut unsupported_frames_count = 0;
@@ -142,16 +141,27 @@ fn main() -> ! {
             // reading serial input
             let received_bytes = receive::receive_data(&mut serial, &mut rx_buf);
             receive::process_received(received_bytes, &rx_buf, &mut accumulator, &mut device_state, &mut incoming_metrics);
+
+
         }
         else {
             // reset states so decider works properly
             device_state = None;
             incoming_metrics = None;
-
         }
         // this eats a lot of time
         //logging::device::metrics(&incoming_metrics, &device_state);
         //info!("{:?}",usb_state);
+
+        // check if grace period is active
+        if grace{
+            if grace_start.elapsed() < grace_period{
+                continue
+            }
+            else{
+                grace = false
+            }
+        }
 
         // decide next frame
         let next_screen = match render::decider::decider(&device_state, usb_state, MAX_UNSUPPORTED_FRAMES, &mut unsupported_frames_count) {
