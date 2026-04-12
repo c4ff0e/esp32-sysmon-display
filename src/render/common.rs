@@ -7,7 +7,9 @@ pub enum RenderDecision {
     Unsupported(FrameKind),
     Full,
     ConnectUsb,
-    NoMetrics
+    NoMetrics,
+    MessageCpu,
+    MessageGpu
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -17,5 +19,7 @@ pub enum ScreenState{
     UnsupportedCpu,
     UnsupportedGpu,
     UnsupportedCpuAndGpu,
+    MessageCpu,
+    MessageGpu,
     Full
 }

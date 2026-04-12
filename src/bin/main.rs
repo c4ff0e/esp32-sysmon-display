@@ -81,7 +81,7 @@ fn main() -> ! {
     let mut current_screen: Option<ScreenState> = None;
 
     //frames
-    let mut unsupported_frames_count = Some(0);
+    let mut unsupported_frames_count = 0;
     const MAX_UNSUPPORTED_FRAMES: i32 = 10; //can be changed
 
     let mut delay = Delay::new();
@@ -149,16 +149,16 @@ fn main() -> ! {
             incoming_metrics = None;
 
         }
-
-        //info!("{:?}",usb_state);
-
         // this eats a lot of time
         //logging::device::metrics(&incoming_metrics, &device_state);
+        //info!("{:?}",usb_state);
 
         // decide next frame
-        let next_screen = match render::decider::decider(&device_state, usb_state) {
+        let next_screen = match render::decider::decider(&device_state, usb_state, MAX_UNSUPPORTED_FRAMES, &mut unsupported_frames_count) {
             RenderDecision::ConnectUsb => Some(ScreenState::ConnectUsb),
             RenderDecision::NoMetrics => Some(ScreenState::NoMetrics),
+            RenderDecision::MessageCpu => Some(ScreenState::MessageCpu),
+            RenderDecision::MessageGpu => Some(ScreenState::MessageGpu),
             RenderDecision::Unsupported(FrameKind::Cpu) => Some(ScreenState::UnsupportedCpu),
             RenderDecision::Unsupported(FrameKind::Gpu) => Some(ScreenState::UnsupportedGpu),
             RenderDecision::Unsupported(FrameKind::GpuAndCpu) => Some(ScreenState::UnsupportedCpuAndGpu),
@@ -166,6 +166,7 @@ fn main() -> ! {
         };
 
         // check if frame is already present and draw if not
+        // screens that may include metrics will obly be drawn here initially
         if current_screen != next_screen {
             match next_screen{
                 Some(ScreenState::ConnectUsb) => {
@@ -174,6 +175,8 @@ fn main() -> ! {
                 Some(ScreenState::NoMetrics) => {
                     frame_mgr::no_metrics(&mut display, &delay, &mut beeper);
                 }
+                Some(ScreenState::MessageCpu) => {}
+                Some(ScreenState::MessageGpu) => {}
                 Some(ScreenState::UnsupportedCpu) => {}
                 Some(ScreenState::UnsupportedGpu) => {}
                 Some(ScreenState::UnsupportedCpuAndGpu) => {
@@ -184,6 +187,7 @@ fn main() -> ! {
             }
             current_screen = next_screen;
         }
+        //dirty regions rerender here
 
         let pipeline_duration = pipeline_start.elapsed();
         info!(

@@ -1,33 +1,26 @@
 use crate::sound::beep;
+use embedded_graphics::prelude::Point;
 use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::gpio::Output;
 use esp_hal::delay::Delay;
 use esp_hal::spi::master::Spi;
-use crate::render::messages;
+use crate::render::message;
 
-fn increment(frames: &mut Option<i32>) {
-    match frames {
-        Some(frames) => *frames += 1,
-        None => return,
-    }
-}
-// does not count frames
 pub fn all_unsupported(
     display: &mut st7735_lcd::ST7735<ExclusiveDevice<Spi<'_, esp_hal::Blocking>, Output<'_>, embedded_hal_bus::spi::NoDelay>, Output<'_>, Output<'_>>,
     delay: &Delay,
     beeper: &mut Output<'_>,
     ){
-        messages::unsupported_all::draw(display);
+        message::draw(display, "Your device is unsupported", Point::new(80, 64));
         beep::all_unsupported_beep(beeper, delay);
 }
 
-// does not count frames
 pub fn no_metrics(
     display: &mut st7735_lcd::ST7735<ExclusiveDevice<Spi<'_, esp_hal::Blocking>, Output<'_>, embedded_hal_bus::spi::NoDelay>, Output<'_>, Output<'_>>,
     delay: &Delay,
     beeper: &mut Output<'_>,
     ){
-        messages::no_metrics::no_metrics(display);
+        message::draw(display, "No data\nCheck server", Point::new(80, 54));
         beep::no_metrics_beep(beeper, delay);
 }
 
@@ -36,7 +29,7 @@ pub fn connect_usb(
     delay: &Delay,
     beeper: &mut Output<'_>,
     ){
-        messages::connect::connect_usb(display);
+        message::draw(display, "You are\nconnected to\nCOM port\nSwitch port",Point::new(80, 34));
         beep::connect_usb_beep(beeper, delay);
     }
 /* 
