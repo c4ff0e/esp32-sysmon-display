@@ -28,12 +28,13 @@ use esp_hal::{
 use st7735_lcd;
 use st7735_lcd::Orientation;
 
-use embedded_graphics::prelude::*;
-use embedded_graphics::pixelcolor::Rgb565;
+use embedded_graphics::{
+    pixelcolor::Rgb565, prelude::*,
+};
 
 use log::info;
 
-use usb_device::device::StringDescriptors;
+use usb_device::device::{StringDescriptors};
 use usb_device::prelude::{UsbDeviceBuilder, UsbVidPid};
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 
@@ -88,7 +89,7 @@ fn main() -> ! {
 
     //display
     let display_config = Config::default()
-    .with_frequency(Rate::from_mhz(20))
+    .with_frequency(Rate::from_mhz(40)) //currently experimental
     .with_mode(Mode::_0);
 
     let cs = Output::new(
@@ -114,24 +115,23 @@ fn main() -> ! {
     
     let spi_dev = ExclusiveDevice::new_no_delay(spi_bus, cs).unwrap();
 
-    let width = 128;
-    let height = 160;
+    let width = 160;
+    let height = 128;
     let rgb = true;
     let inverted = false;
 
     let mut display = st7735_lcd::ST7735::new(spi_dev, dc, reset, rgb, inverted, width, height);
     display.init(&mut delay).unwrap();
+    display.set_orientation(&Orientation::Landscape).unwrap();
     display.clear(Rgb565::BLACK).unwrap();
-
+    
     //beeper
     let mut beeper = Output::new(
         peripherals.GPIO4,
         Level::Low,
         OutputConfig::default(),
     );
-
-    
-
+    render::messages::connect::connect_usb(&mut display); //will be moved
     loop {
         // main
         let pipeline_start = Instant::now();
