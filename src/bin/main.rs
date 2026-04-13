@@ -6,19 +6,18 @@
     holding buffers for the duration of a data transfer."
 )]
 #![deny(clippy::large_stack_frames)]
-use core::ptr::addr_of_mut;
-use embedded_hal_bus::spi::ExclusiveDevice;
-#[allow(
+#![allow(
     clippy::large_stack_frames,
     reason = "it's not unusual to allocate larger buffers etc. in main"
 )]
 
+use core::ptr::addr_of_mut;
+use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_backtrace as _;
 use esp_hal::{
     clock::CpuClock, delay::Delay, gpio::{Level, Output, OutputConfig}, main, otg_fs::{Usb, UsbBus}, spi::{Mode, master::{Config, Spi}}, time::{Duration, Instant, Rate}
 };
 
-use st7735_lcd;
 use st7735_lcd::Orientation;
 
 use embedded_graphics::{
@@ -87,7 +86,7 @@ fn main() -> ! {
 
     //display
     let display_config = Config::default()
-    .with_frequency(Rate::from_mhz(40)) //currently experimental
+    .with_frequency(Rate::from_mhz(40))
     .with_mode(Mode::_0);
 
     let cs = Output::new(
@@ -176,6 +175,7 @@ fn main() -> ! {
 
         // check if frame is already present and draw if not
         // screens that may include metrics will obly be drawn here initially
+        // metrics can be unwrapped becouse decider already based the decision on metrics
         if current_screen != next_screen {
             match next_screen{
                 Some(ScreenState::ConnectUsb) => {
@@ -195,7 +195,9 @@ fn main() -> ! {
                 Some(ScreenState::UnsupportedCpuAndGpu) => {
                     frame_mgr::all_unsupported(&mut display, &delay, &mut beeper);
                 }
-                Some(ScreenState::Full) => {}
+                Some(ScreenState::Full) => {
+                    frame_mgr::full_initial(&mut display, incoming_metrics.as_ref().unwrap());
+                }
                 None => {}
             }
             current_screen = next_screen;
