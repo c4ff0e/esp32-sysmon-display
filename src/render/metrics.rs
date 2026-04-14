@@ -5,8 +5,50 @@ use embedded_graphics::{
     text::{Text},
     primitives::{PrimitiveStyle, Rectangle},
 };
+use heapless::String;
+use core::fmt::Write;
 use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::{gpio::Output, spi::master::Spi};
+
+pub fn create_cpu_text<'text, 'style>(
+    cpu_name: &str,
+    cpu_usage: f32,
+    cpu_frequency: u32,
+    cpu_text: &'text mut String<64>, 
+    cpu_text_style: MonoTextStyle<'style, Rgb565>,
+    position: Point
+    ) -> Text<'text, MonoTextStyle<'style, Rgb565>>
+    {   
+        let _ = write!(cpu_text, "{}\n{:.0}%, {} MHz",cpu_name, cpu_usage, cpu_frequency);
+        Text::new(cpu_text.as_str(), position, cpu_text_style)
+}
+
+pub fn create_gpu_text<'text, 'style>(
+    gpu_usage: f32, 
+    gpu_temp: u32, 
+    gpu_freq: u32, 
+    gpu_mem_pct: u64, 
+    gpu_text: &'text mut String<64>, 
+    gpu_text_style: MonoTextStyle<'style, Rgb565>,
+    position: Point
+    ) -> Text<'text, MonoTextStyle<'style, Rgb565>>
+    {
+    let _ = write!(gpu_text, "GPU: {:.0}%, {}°C\n{}MHz, VRAM {}%", gpu_usage, gpu_temp, gpu_freq, gpu_mem_pct, ); 
+    Text::new(gpu_text.as_str(), position, gpu_text_style)
+}
+
+pub fn create_ram_text<'text, 'style>(
+    total_ram: u64,
+    used_ram: u64,
+    ram_text: &'text mut String<64>, 
+    ram_text_style: MonoTextStyle<'style, Rgb565>,
+    position: Point
+    ) -> Text<'text, MonoTextStyle<'style, Rgb565>>
+    {
+        let _ = write!(ram_text, "RAM TOTAL: {} GB\nRAM USED: {} GB", total_ram / (1024 * 1024 * 1024), used_ram / (1024 * 1024 * 1024));
+        // for me ram text appears offsetted in comparison with gpu text. maybe it is bacuse you cant divide screen into three equal regions
+        Text::new(ram_text.as_str(), position, ram_text_style)
+}
 
 pub fn full_initial(
     display: &mut st7735_lcd::ST7735<ExclusiveDevice<Spi<'_, esp_hal::Blocking>, Output<'_>, embedded_hal_bus::spi::NoDelay>, Output<'_>, Output<'_>>,
