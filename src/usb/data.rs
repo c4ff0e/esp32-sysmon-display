@@ -11,14 +11,14 @@ pub struct IncomingMetrics {
     pub cpu_is_supported: bool,
     pub cpu_temp: f32,
 
-    pub total_ram: u64,
-    pub used_ram: u64,
+    pub total_ram: u64, // bytes
+    pub used_ram: u64,  // bytes
 
     pub gpu_name: String<128>,
     pub gpu_usage: f32,
     pub gpu_temp: u32,
     pub gpu_memory_total: u64,
-    pub gpu_memory_used: u64,
+    pub gpu_memory_used: u64, // bytes, not percentage
     pub gpu_freq: u32,
     pub gpu_supported: bool,
 }
