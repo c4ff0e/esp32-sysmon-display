@@ -102,3 +102,47 @@ pub fn full_initial(
 
         render::metrics::full_initial(display, CPU_BORDER, GPU_BORDER, RAM_BORDER, cpu_text, gpu_text, ram_text);  
 }
+
+// gpu + ram screen
+pub fn unsupported_cpu_initial(
+    display: &mut st7735_lcd::ST7735<ExclusiveDevice<Spi<'_, esp_hal::Blocking>, Output<'_>, embedded_hal_bus::spi::NoDelay>, Output<'_>, Output<'_>>,
+    incoming_metrics: &IncomingMetrics
+    ){
+        let mut gpu_text: String<64> = String::new();
+        let mut ram_text: String<64> = String::new();
+
+        // get mem usage %
+        let gpu_mem_pct = if incoming_metrics.gpu_memory_total > 0 {                          
+            incoming_metrics.gpu_memory_used * 100 / incoming_metrics.gpu_memory_total    
+        } else {                                                                          
+            0                                                                             
+        };
+
+        //TODO: change
+        let gpu_text_pos = Point { x: 5, y: 27 };
+        let ram_text_pos = Point { x: 5, y: 92};
+
+        //TODO: change
+        let gpu_text = render::metrics::create_gpu_text(incoming_metrics.gpu_usage, incoming_metrics.gpu_temp, incoming_metrics.gpu_freq, gpu_mem_pct, &mut gpu_text, GPU_TEXT_STYLE, gpu_text_pos);
+        let ram_text = render::metrics::create_ram_text(incoming_metrics.total_ram, incoming_metrics.used_ram, &mut ram_text, RAM_TEXT_STYLE, ram_text_pos);
+
+        render::metrics::unsupported_cpu_initial(display, GPU_BORDER, RAM_BORDER, gpu_text,ram_text)
+    }
+// cpu + ram screen
+pub fn unsupported_gpu_initial(
+    display: &mut st7735_lcd::ST7735<ExclusiveDevice<Spi<'_, esp_hal::Blocking>, Output<'_>, embedded_hal_bus::spi::NoDelay>, Output<'_>, Output<'_>>,
+    incoming_metrics: &IncomingMetrics
+    ){
+        let mut cpu_text: String<64> = String::new();
+        let mut ram_text: String<64> = String::new();
+
+        //TODO: change
+        let cpu_text_pos = Point { x: 5, y: 27 };
+        let ram_text_pos = Point { x: 5, y: 92};
+
+        //TODO: change
+        let cpu_text = render::metrics::create_cpu_text(incoming_metrics.cpu_name.as_str(), incoming_metrics.cpu_usage, incoming_metrics.cpu_frequency, &mut cpu_text, CPU_TEXT_STYLE, cpu_text_pos);
+        let ram_text = render::metrics::create_ram_text(incoming_metrics.total_ram, incoming_metrics.used_ram, &mut ram_text, RAM_TEXT_STYLE, ram_text_pos);
+
+        render::metrics::unsupported_gpu_initial(display, CPU_BORDER, RAM_BORDER, cpu_text,ram_text)
+    }

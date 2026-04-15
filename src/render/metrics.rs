@@ -81,3 +81,51 @@ pub fn full_initial(
     ram_zone.draw(display).unwrap();
     ram_text.draw(display).unwrap();
 }
+pub fn unsupported_cpu_initial(
+    display: &mut st7735_lcd::ST7735<ExclusiveDevice<Spi<'_, esp_hal::Blocking>, Output<'_>, embedded_hal_bus::spi::NoDelay>, Output<'_>, Output<'_>>,
+    gpu_border: PrimitiveStyle<Rgb565>,
+    ram_border: PrimitiveStyle<Rgb565>,
+    gpu_text: Text<'_, MonoTextStyle<'_, Rgb565>>,
+    ram_text: Text<'_, MonoTextStyle<'_, Rgb565>>,
+){
+    // create boxes
+    let gpu_zone = Rectangle::new(Point::new(0, 0), Size::new(160, 64))
+        .into_styled(gpu_border);
+    let ram_zone = Rectangle::new(Point::new(0, 64), Size::new(160, 64))
+        .into_styled(ram_border);
+
+    // blank the screen
+    display.clear(Rgb565::BLACK).unwrap();
+
+    // draw
+    gpu_zone.draw(display).unwrap();
+    gpu_text.draw(display).unwrap();
+
+    ram_zone.draw(display).unwrap();
+    ram_text.draw(display).unwrap();
+}
+
+
+pub fn unsupported_gpu_initial(
+    display: &mut st7735_lcd::ST7735<ExclusiveDevice<Spi<'_, esp_hal::Blocking>, Output<'_>, embedded_hal_bus::spi::NoDelay>, Output<'_>, Output<'_>>,
+    cpu_border: PrimitiveStyle<Rgb565>,
+    ram_border: PrimitiveStyle<Rgb565>,
+    cpu_text: Text<'_, MonoTextStyle<'_, Rgb565>>,
+    ram_text: Text<'_, MonoTextStyle<'_, Rgb565>>,
+){
+    // create boxes
+    let cpu_zone = Rectangle::new(Point::new(0, 0), Size::new(160, 64))
+        .into_styled(cpu_border);
+    let ram_zone = Rectangle::new(Point::new(0, 64), Size::new(160, 64))
+        .into_styled(ram_border);
+
+    // blank the screen
+    display.clear(Rgb565::BLACK).unwrap();
+
+    // draw
+    cpu_zone.draw(display).unwrap();
+    cpu_text.draw(display).unwrap();
+
+    ram_zone.draw(display).unwrap();
+    ram_text.draw(display).unwrap();
+}

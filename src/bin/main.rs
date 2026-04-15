@@ -57,9 +57,9 @@ fn main() -> ! {
     let mut serial = SerialPort::new(&usb_bus); // usb serial port
     let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x303A, 0x3001))
         .strings(&[StringDescriptors::default()
-            .manufacturer("Gadza Techonologies")
-            .product("Zhmishenko Valeriy Albertovich")
-            .serial_number("Dve dvoechki odna vos'merochka")])
+            .manufacturer("github.com/c4ff0e/esp32-sysmon-display")
+            .product("System resource monitor")
+            .serial_number("6767")])
         .expect("Failed to set USB device strings")
         .device_class(USB_CLASS_CDC)
         .build();
@@ -80,7 +80,12 @@ fn main() -> ! {
 
     //frames
     let mut unsupported_frames_count = 0;
-    const MAX_UNSUPPORTED_FRAMES: i32 = 10; //can be changed
+
+    // i know that it is not optimal to count time as "frames" that are not time-consistent
+    // but anyway...
+    
+    // 200 frames is roughly 2 seconds
+    const MAX_UNSUPPORTED_FRAMES: i32 = 200; 
 
     let mut delay = Delay::new();
 
@@ -174,7 +179,7 @@ fn main() -> ! {
         };
 
         // check if frame is already present and draw if not
-        // screens that may include metrics will obly be drawn here initially
+        // screens that may include metrics will only be drawn here initially
         // metrics can be unwrapped becouse decider already based the decision on metrics
         if current_screen != next_screen {
             match next_screen{
@@ -190,8 +195,12 @@ fn main() -> ! {
                 Some(ScreenState::MessageGpu) => {
                     frame_mgr::message_gpu(&mut display, &delay, &mut beeper);
                 }
-                Some(ScreenState::UnsupportedCpu) => {}
-                Some(ScreenState::UnsupportedGpu) => {}
+                Some(ScreenState::UnsupportedCpu) => {
+                    frame_mgr::unsupported_cpu_initial(&mut display, incoming_metrics.as_ref().unwrap() );
+                }
+                Some(ScreenState::UnsupportedGpu) => {
+                    frame_mgr::unsupported_gpu_initial(&mut display, incoming_metrics.as_ref().unwrap() );
+                }
                 Some(ScreenState::UnsupportedCpuAndGpu) => {
                     frame_mgr::all_unsupported(&mut display, &delay, &mut beeper);
                 }
