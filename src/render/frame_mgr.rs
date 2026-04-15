@@ -1,5 +1,6 @@
 use crate::{render, sound::beep};
 use crate::usb::data::IncomingMetrics;
+use embedded_graphics::mono_font::MonoTextStyleBuilder;
 use embedded_graphics::{mono_font::MonoTextStyle, pixelcolor::Rgb565, prelude::{Point, *}, primitives::{PrimitiveStyle, PrimitiveStyleBuilder, StrokeAlignment}};
 use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::gpio::Output;
@@ -31,6 +32,9 @@ const CPU_TEXT_STYLE: MonoTextStyle<'_, Rgb565> = MonoTextStyle::new(&PROFONT_12
 const GPU_TEXT_STYLE: MonoTextStyle<'_, Rgb565> = MonoTextStyle::new(&PROFONT_12_POINT, Rgb565::CSS_ORANGE_RED);
 const RAM_TEXT_STYLE: MonoTextStyle<'_, Rgb565> = MonoTextStyle::new(&PROFONT_12_POINT, Rgb565::CSS_DARK_GREEN);
 
+const CPU_DIRTY_TEXT_STYLE: MonoTextStyle<'_, Rgb565> = MonoTextStyleBuilder::new().font(&PROFONT_12_POINT).text_color(Rgb565::CSS_STEEL_BLUE).background_color(Rgb565::BLACK).build();
+const GPU_DIRTY_TEXT_STYLE: MonoTextStyle<'_, Rgb565> = MonoTextStyleBuilder::new().font(&PROFONT_12_POINT).text_color(Rgb565::CSS_ORANGE_RED).background_color(Rgb565::BLACK).build();
+const RAM_DIRTY_TEXT_STYLE: MonoTextStyle<'_, Rgb565> = MonoTextStyleBuilder::new().font(&PROFONT_12_POINT).text_color(Rgb565::CSS_DARK_GREEN).background_color(Rgb565::BLACK).build();
 
 pub fn all_unsupported(
     display: &mut st7735_lcd::ST7735<ExclusiveDevice<Spi<'_, esp_hal::Blocking>, Output<'_>, embedded_hal_bus::spi::NoDelay>, Output<'_>, Output<'_>>,
@@ -118,11 +122,9 @@ pub fn unsupported_cpu_initial(
             0                                                                             
         };
 
-        //TODO: change
         let gpu_text_pos = Point { x: 5, y: 27 };
         let ram_text_pos = Point { x: 5, y: 92};
 
-        //TODO: change
         let gpu_text = render::metrics::create_gpu_text(incoming_metrics.gpu_usage, incoming_metrics.gpu_temp, incoming_metrics.gpu_freq, gpu_mem_pct, &mut gpu_text, GPU_TEXT_STYLE, gpu_text_pos);
         let ram_text = render::metrics::create_ram_text(incoming_metrics.total_ram, incoming_metrics.used_ram, &mut ram_text, RAM_TEXT_STYLE, ram_text_pos);
 
@@ -136,13 +138,79 @@ pub fn unsupported_gpu_initial(
         let mut cpu_text: String<64> = String::new();
         let mut ram_text: String<64> = String::new();
 
-        //TODO: change
         let cpu_text_pos = Point { x: 5, y: 27 };
         let ram_text_pos = Point { x: 5, y: 92};
 
-        //TODO: change
         let cpu_text = render::metrics::create_cpu_text(incoming_metrics.cpu_name.as_str(), incoming_metrics.cpu_usage, incoming_metrics.cpu_frequency, &mut cpu_text, CPU_TEXT_STYLE, cpu_text_pos);
         let ram_text = render::metrics::create_ram_text(incoming_metrics.total_ram, incoming_metrics.used_ram, &mut ram_text, RAM_TEXT_STYLE, ram_text_pos);
 
         render::metrics::unsupported_gpu_initial(display, CPU_BORDER, RAM_BORDER, cpu_text,ram_text)
     }
+
+pub fn dirty_full( 
+    display: &mut st7735_lcd::ST7735<ExclusiveDevice<Spi<'_, esp_hal::Blocking>, Output<'_>, embedded_hal_bus::spi::NoDelay>, Output<'_>, Output<'_>>,
+    incoming_metrics: &IncomingMetrics
+    ){
+        let mut cpu_text: String<64> = String::new(); 
+        let mut gpu_text: String<64> = String::new();
+        let mut ram_text: String<64> = String::new();
+
+        // get mem usage %
+        let gpu_mem_pct = if incoming_metrics.gpu_memory_total > 0 {                          
+            incoming_metrics.gpu_memory_used * 100 / incoming_metrics.gpu_memory_total    
+        } else {                                                                          
+            0                                                                             
+        };
+
+        let cpu_text_pos = Point { x: 5, y: 17 };
+        let gpu_text_pos = Point { x: 5, y: 60 };
+        let ram_text_pos = Point { x: 5, y: 102 };
+
+        let cpu_text = render::metrics::create_cpu_text(incoming_metrics.cpu_name.as_str(), incoming_metrics.cpu_usage, incoming_metrics.cpu_frequency, &mut cpu_text, CPU_DIRTY_TEXT_STYLE, cpu_text_pos);
+        let gpu_text = render::metrics::create_gpu_text(incoming_metrics.gpu_usage, incoming_metrics.gpu_temp, incoming_metrics.gpu_freq, gpu_mem_pct, &mut gpu_text, GPU_DIRTY_TEXT_STYLE, gpu_text_pos);
+        let ram_text = render::metrics::create_ram_text(incoming_metrics.total_ram, incoming_metrics.used_ram, &mut ram_text, RAM_DIRTY_TEXT_STYLE, ram_text_pos);
+
+        render::metrics::dirty_full(display, cpu_text, gpu_text, ram_text);
+
+    }
+
+// gpu + ram screen
+pub fn dirty_unsupported_cpu(
+    display: &mut st7735_lcd::ST7735<ExclusiveDevice<Spi<'_, esp_hal::Blocking>, Output<'_>, embedded_hal_bus::spi::NoDelay>, Output<'_>, Output<'_>>,
+    incoming_metrics: &IncomingMetrics
+){
+    let mut gpu_text: String<64> = String::new();
+    let mut ram_text: String<64> = String::new();
+
+    // get mem usage %
+    let gpu_mem_pct = if incoming_metrics.gpu_memory_total > 0 {                          
+        incoming_metrics.gpu_memory_used * 100 / incoming_metrics.gpu_memory_total    
+    } else {                                                                          
+        0                                                                             
+    };
+    
+    let gpu_text_pos = Point { x: 5, y: 27 };
+    let ram_text_pos = Point { x: 5, y: 92};
+
+    let gpu_text = render::metrics::create_gpu_text(incoming_metrics.gpu_usage, incoming_metrics.gpu_temp, incoming_metrics.gpu_freq, gpu_mem_pct, &mut gpu_text, GPU_DIRTY_TEXT_STYLE, gpu_text_pos);
+    let ram_text = render::metrics::create_ram_text(incoming_metrics.total_ram, incoming_metrics.used_ram, &mut ram_text, RAM_DIRTY_TEXT_STYLE, ram_text_pos);
+
+    render::metrics::dirty_unsupported_cpu(display, gpu_text, ram_text);
+}
+
+// cpu + ram screen
+pub fn dirty_unsupported_gpu(
+    display: &mut st7735_lcd::ST7735<ExclusiveDevice<Spi<'_, esp_hal::Blocking>, Output<'_>, embedded_hal_bus::spi::NoDelay>, Output<'_>, Output<'_>>,
+    incoming_metrics: &IncomingMetrics
+){
+    let mut cpu_text: String<64> = String::new();
+    let mut ram_text: String<64> = String::new();
+    
+    let cpu_text_pos = Point { x: 5, y: 27 };
+    let ram_text_pos = Point { x: 5, y: 92};
+
+    let cpu_text = render::metrics::create_cpu_text(incoming_metrics.cpu_name.as_str(), incoming_metrics.cpu_usage, incoming_metrics.cpu_frequency, &mut cpu_text, CPU_DIRTY_TEXT_STYLE, cpu_text_pos); 
+    let ram_text = render::metrics::create_ram_text(incoming_metrics.total_ram, incoming_metrics.used_ram, &mut ram_text, RAM_DIRTY_TEXT_STYLE, ram_text_pos);
+
+    render::metrics::dirty_unsupported_cpu(display, cpu_text, ram_text);
+}

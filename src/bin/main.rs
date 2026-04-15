@@ -83,7 +83,7 @@ fn main() -> ! {
 
     // i know that it is not optimal to count time as "frames" that are not time-consistent
     // but anyway...
-    
+
     // 200 frames is roughly 2 seconds
     const MAX_UNSUPPORTED_FRAMES: i32 = 200; 
 
@@ -212,6 +212,20 @@ fn main() -> ! {
             current_screen = next_screen;
         }
         //dirty regions rerender here
+        else{
+            match current_screen{
+                Some(ScreenState::UnsupportedCpu) => {
+                    frame_mgr::dirty_unsupported_cpu(&mut display, incoming_metrics.as_ref().unwrap());
+                }
+                Some(ScreenState::UnsupportedGpu) => {
+                    frame_mgr::dirty_unsupported_gpu(&mut display, incoming_metrics.as_ref().unwrap());
+                }
+                Some(ScreenState::Full) => {
+                    frame_mgr::dirty_full(&mut display, incoming_metrics.as_ref().unwrap());
+                }
+                _ => {} // skip
+            }
+        }
 
         let pipeline_duration = pipeline_start.elapsed();
         info!(
