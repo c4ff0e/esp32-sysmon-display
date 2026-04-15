@@ -16,7 +16,6 @@ pub fn receive_data(
         // no data received
         Ok(_) => Err(usbd_serial::UsbError::WouldBlock),
         Err(e) => {
-            info!("Error reading from serial port: {:?}", e);
             Err(e)
         }
     }

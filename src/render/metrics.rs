@@ -1,5 +1,5 @@
 use embedded_graphics::{
-    mono_font::MonoTextStyle, pixelcolor::Rgb565, prelude::*, primitives::{PrimitiveStyle, Rectangle, StyledDrawable}, text::Text
+    mono_font::MonoTextStyle, pixelcolor::Rgb565, prelude::*, primitives::{PrimitiveStyle, Rectangle}, text::Text
 };
 use heapless::String;
 use core::fmt::Write;

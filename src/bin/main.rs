@@ -32,7 +32,7 @@ use usbd_serial::{SerialPort, USB_CLASS_CDC};
 
 use postcard::accumulator::{CobsAccumulator,};
 
-use display::{render::frame_mgr, usb::data::{DeviceState, IncomingMetrics}};
+use display::{render::{frame_mgr}, usb::data::{DeviceState, IncomingMetrics}};
 use display::usb::receive;
 
 use display::render;
@@ -76,7 +76,7 @@ fn main() -> ! {
     // while it is active beeps are not played
     let mut grace = true;
     let grace_start = Instant::now();
-    let grace_period= Duration::from_millis(5000); //it is very high to aviod excessive beeps on first start
+    const GRACE_PERIOD: Duration= Duration::from_millis(5000); //it is very high to aviod excessive beeps on first start
 
     //frames
     let mut unsupported_frames_count = 0;
@@ -86,6 +86,15 @@ fn main() -> ! {
 
     // 200 frames is roughly 2 seconds
     const MAX_UNSUPPORTED_FRAMES: i32 = 200; 
+
+    // metrics staleness
+    // used for knowing when server has crashed/closed/etc but device is still connected
+
+    // see above my opinion about frame counts
+    let mut incoming_prev: Option<IncomingMetrics> = None;
+    let mut metrics_stale_counter = 0;
+    const MAX_STALE_FRAMES: i32 = 200;
+    // also they are not frames, they are cycles
 
     let mut delay = Delay::new();
 
@@ -158,7 +167,7 @@ fn main() -> ! {
 
         // check if grace period is active
         if grace{
-            if grace_start.elapsed() < grace_period{
+            if grace_start.elapsed() < GRACE_PERIOD{
                 continue
             }
             else{
@@ -167,7 +176,16 @@ fn main() -> ! {
         }
 
         // decide next frame
-        let next_screen = match render::decider::decider(&device_state, usb_state, MAX_UNSUPPORTED_FRAMES, &mut unsupported_frames_count) {
+        let next_screen = match render::decider::decider(
+            &incoming_metrics,
+            &device_state,
+            usb_state,
+            &mut unsupported_frames_count,
+            &mut incoming_prev,
+            &mut metrics_stale_counter,
+            MAX_STALE_FRAMES,
+            MAX_UNSUPPORTED_FRAMES
+        ){
             RenderDecision::ConnectUsb => Some(ScreenState::ConnectUsb),
             RenderDecision::NoMetrics => Some(ScreenState::NoMetrics),
             RenderDecision::MessageCpu => Some(ScreenState::MessageCpu),

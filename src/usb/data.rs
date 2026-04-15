@@ -2,7 +2,7 @@ use heapless::String;
 use log::info;
 use serde::Deserialize;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, PartialEq, Clone)]
 // it is kinda wasteful to save strings value on every succesfull packet, but anyway...
 pub struct IncomingMetrics {
     pub cpu_usage: f32,
