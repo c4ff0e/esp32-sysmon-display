@@ -267,3 +267,14 @@ const CPU_TEXT_STYLE: MonoTextStyle<'_, Rgb565> =
 MonoTextStyle::new(&PROFONT_12_POINT, Rgb565::CSS_STEEL_BLUE);
 // you can change text color and font size
 ```
+## Errors/Troubleshooting
+`You are connected to COM port`\
+`Switch port`\
+You have connected device to the wrong USB port, if there are two of them. Connect device to the other port.
+
+`Your [something] is unsupported`\
+Server has reported that something from your desktop hardware is not supported by it. Display will continue to work, but unsupported hardware metrics will not be shown.
+
+`No data`\
+`Check server`\
+Desktop server didn't send any metrics/metrics are stale. Check whether it crashed/exited/lost connection or using the wrong port.
