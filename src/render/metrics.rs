@@ -29,7 +29,7 @@ pub fn create_gpu_text<'text, 'style>(
     position: Point
     ) -> Text<'text, MonoTextStyle<'style, Rgb565>>
     {
-    let _ = write!(gpu_text, "GPU: {:>3}% {:>3}°C\n{:>4}MHz VRAM{:>3}% ", gpu_usage as u32, gpu_temp, gpu_freq, gpu_mem_pct, ); 
+    let _ = write!(gpu_text, "GPU: {:>3}% {:>3}°C\n{:>4}MHz VRAM {:>3}% ", gpu_usage as u32, gpu_temp, gpu_freq, gpu_mem_pct, ); 
     Text::new(gpu_text.as_str(), position, gpu_text_style)
 }
 

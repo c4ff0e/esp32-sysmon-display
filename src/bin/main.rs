@@ -142,10 +142,12 @@ fn main() -> ! {
         Level::Low,
         OutputConfig::default(),
     );
+    const BEEP_ON_UNSUPPORTED: bool = true;
+    const BEEP_ON_FAILURES: bool = true;
 
     // main
     loop {
-        let pipeline_start = Instant::now();
+        //let pipeline_start = Instant::now();
 
         usb_dev.poll(&mut [&mut serial]);
         let usb_state = usb_dev.state();
@@ -202,16 +204,16 @@ fn main() -> ! {
         if current_screen != next_screen {
             match next_screen{
                 Some(ScreenState::ConnectUsb) => {
-                    frame_mgr::connect_usb(&mut display, &delay, &mut beeper);
+                    frame_mgr::connect_usb(&mut display, &delay, &mut beeper, BEEP_ON_FAILURES);
                 }
                 Some(ScreenState::NoMetrics) => {
-                    frame_mgr::no_metrics(&mut display, &delay, &mut beeper);
+                    frame_mgr::no_metrics(&mut display, &delay, &mut beeper, BEEP_ON_FAILURES);
                 }
                 Some(ScreenState::MessageCpu) => {
-                    frame_mgr::message_cpu(&mut display, &delay, &mut beeper);
+                    frame_mgr::message_cpu(&mut display, &delay, &mut beeper, BEEP_ON_UNSUPPORTED);
                 }
                 Some(ScreenState::MessageGpu) => {
-                    frame_mgr::message_gpu(&mut display, &delay, &mut beeper);
+                    frame_mgr::message_gpu(&mut display, &delay, &mut beeper, BEEP_ON_UNSUPPORTED);
                 }
                 Some(ScreenState::UnsupportedCpu) => {
                     frame_mgr::unsupported_cpu_initial(&mut display, incoming_metrics.as_ref().unwrap() );
@@ -220,7 +222,7 @@ fn main() -> ! {
                     frame_mgr::unsupported_gpu_initial(&mut display, incoming_metrics.as_ref().unwrap() );
                 }
                 Some(ScreenState::UnsupportedCpuAndGpu) => {
-                    frame_mgr::all_unsupported(&mut display, &delay, &mut beeper);
+                    frame_mgr::all_unsupported(&mut display, &delay, &mut beeper, BEEP_ON_UNSUPPORTED);
                 }
                 Some(ScreenState::Full) => {
                     frame_mgr::full_initial(&mut display, incoming_metrics.as_ref().unwrap());
@@ -245,10 +247,10 @@ fn main() -> ! {
             }
         }
 
-        let pipeline_duration = pipeline_start.elapsed();
-        info!(
-            "Pipeline execution time: {:?} ms",
-            pipeline_duration.as_millis()
-        );
+        //let pipeline_duration = pipeline_start.elapsed();
+        //info!(
+            //"Pipeline execution time: {:?} ms",
+            //pipeline_duration.as_millis()
+        //);
     }
 }
